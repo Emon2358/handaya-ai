@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>無料 AI Chat サイト (BlenderBot 利用版)</title>
+  <title>無料 AI Chat サイト (日本語対応)</title>
   <style>
-    /* CSSスタイル */
+    /* CSS スタイル */
     body {
       font-family: Arial, sans-serif;
       background: #f2f2f2;
@@ -23,7 +23,7 @@
       height: 80vh;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
       border-radius: 8px;
       overflow: hidden;
     }
@@ -45,7 +45,7 @@
       padding: 10px;
       border-radius: 5px;
       max-width: 80%;
-      word-wrap: break-word;
+      word-break: break-all;
     }
     .user {
       background: #d1ffd6;
@@ -78,7 +78,7 @@
 </head>
 <body>
   <div class="chat-container">
-    <h1>AI Chat</h1>
+    <h1>日本語 AI チャット</h1>
     <div id="chat-window" class="chat-window"></div>
     <form id="chat-form">
       <input type="text" id="user-input" placeholder="メッセージを入力..." autocomplete="off" required>
@@ -86,15 +86,6 @@
     </form>
   </div>
   <script>
-    /**
-     * このチャットアプリは、Hugging Face の無料推論 API を利用して、
-     * Facebook の BlenderBot (facebook/blenderbot-400M-distill) モデルを使った会話が実現できます。
-     *
-     * 注意:
-     * ・このエンドポイントは API キーなしで利用可能ですが、リクエスト数に制限がある場合があります。
-     * ・安全性・倫理的な配慮がなされたモデルですが、利用時はその点をご留意ください。
-     */
-
     // チャットウィンドウにメッセージを追加する関数
     function appendMessage(text, sender) {
       const chatWindow = document.getElementById("chat-window");
@@ -105,10 +96,10 @@
       chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 
-    // Hugging Face の BlenderBot モデルを利用して AI の返答を取得する関数
+    // Hugging Face の日本語対応モデル (rinna/japanese-gpt2-medium) を使用して AI の返答を取得する関数
     async function getBotResponse(message) {
       try {
-        const apiUrl = "https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill";
+        const apiUrl = "https://api-inference.huggingface.co/models/rinna/japanese-gpt2-medium";
         const response = await fetch(apiUrl, {
           method: "POST",
           headers: {
@@ -120,18 +111,20 @@
           throw new Error("ネットワークエラー");
         }
         const data = await response.json();
-        // BlenderBot の出力は配列で返される場合があるので、最初の候補を使用
-        if (Array.isArray(data) && data.length > 0 && data[0].generated_text) {
+        // GPT2系のモデルは返答を generated_text に入れて返す場合があります
+        if (data && data.generated_text) {
+          return data.generated_text;
+        } else if (Array.isArray(data) && data.length > 0 && data[0].generated_text) {
           return data[0].generated_text;
         }
         return "すみません、応答を取得できませんでした。";
       } catch (error) {
-        console.error(error);
+        console.error("Error:", error);
         return "エラーが発生しました。後ほど再度お試しください。";
       }
     }
 
-    // フォーム送信時のイベントリスナー
+    // チャットフォーム送信時のイベントリスナー
     document.getElementById("chat-form").addEventListener("submit", async function(event) {
       event.preventDefault();
       const userInputElem = document.getElementById("user-input");
@@ -141,15 +134,14 @@
       // ユーザーのメッセージを表示
       appendMessage(message, "user");
 
-      // AI の返答を取得して表示
+      // Hugging Face のモデルを利用して AI の応答を取得
       const botResponse = await getBotResponse(message);
       setTimeout(() => {
         appendMessage(botResponse, "ai");
-      }, 500); // 少し遅延を設定
+      }, 500); // 少し遅延させて表示
 
       userInputElem.value = "";
     });
   </script>
 </body>
 </html>
-``` ▋
