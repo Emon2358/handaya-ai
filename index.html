@@ -1,147 +1,176 @@
 <!DOCTYPE html>
 <html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>無料 AI Chat サイト (日本語対応)</title>
-  <style>
-    /* CSS スタイル */
-    body {
-      font-family: Arial, sans-serif;
-      background: #f2f2f2;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    .chat-container {
-      background: #fff;
-      width: 90%;
-      max-width: 600px;
-      height: 80vh;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      border-radius: 8px;
-      overflow: hidden;
-    }
-    h1 {
-      background: #4CAF50;
-      color: #fff;
-      margin: 0;
-      padding: 15px;
-      text-align: center;
-    }
-    .chat-window {
-      flex: 1;
-      padding: 15px;
-      overflow-y: auto;
-      background: #e9e9e9;
-    }
-    .message {
-      margin-bottom: 10px;
-      padding: 10px;
-      border-radius: 5px;
-      max-width: 80%;
-      word-break: break-all;
-    }
-    .user {
-      background: #d1ffd6;
-      align-self: flex-end;
-    }
-    .ai {
-      background: #fff;
-      align-self: flex-start;
-      border: 1px solid #ccc;
-    }
-    #chat-form {
-      display: flex;
-      border-top: 1px solid #ccc;
-    }
-    #user-input {
-      flex: 1;
-      padding: 10px;
-      border: none;
-      font-size: 16px;
-    }
-    #chat-form button {
-      background: #4CAF50;
-      color: white;
-      border: none;
-      padding: 0 20px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-  </style>
-</head>
-<body>
-  <div class="chat-container">
-    <h1>日本語 AI チャット</h1>
-    <div id="chat-window" class="chat-window"></div>
-    <form id="chat-form">
-      <input type="text" id="user-input" placeholder="メッセージを入力..." autocomplete="off" required>
-      <button type="submit">送信</button>
-    </form>
-  </div>
-  <script>
-    // チャットウィンドウにメッセージを追加する関数
-    function appendMessage(text, sender) {
-      const chatWindow = document.getElementById("chat-window");
-      const messageDiv = document.createElement("div");
-      messageDiv.classList.add("message", sender);
-      messageDiv.innerText = text;
-      chatWindow.appendChild(messageDiv);
-      chatWindow.scrollTop = chatWindow.scrollHeight;
-    }
-
-    // Hugging Face の日本語対応モデル (rinna/japanese-gpt2-medium) を使用して AI の返答を取得する関数
-    async function getBotResponse(message) {
-      try {
-        const apiUrl = "https://api-inference.huggingface.co/models/rinna/japanese-gpt2-medium";
-        const response = await fetch(apiUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ inputs: message })
-        });
-        if (!response.ok) {
-          throw new Error("ネットワークエラー");
-        }
-        const data = await response.json();
-        // GPT2系のモデルは返答を generated_text に入れて返す場合があります
-        if (data && data.generated_text) {
-          return data.generated_text;
-        } else if (Array.isArray(data) && data.length > 0 && data[0].generated_text) {
-          return data[0].generated_text;
-        }
-        return "すみません、応答を取得できませんでした。";
-      } catch (error) {
-        console.error("Error:", error);
-        return "エラーが発生しました。後ほど再度お試しください。";
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>日本語 AI チャット (ブラウザ内推論版)</title>
+    <style>
+      /* CSS スタイル */
+      body {
+        font-family: Arial, sans-serif;
+        background: #f2f2f2;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
       }
-    }
+      .chat-container {
+        background: #fff;
+        width: 90%;
+        max-width: 600px;
+        height: 80vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      h1 {
+        background: #4CAF50;
+        color: #fff;
+        margin: 0;
+        padding: 15px;
+        text-align: center;
+      }
+      #chat-window {
+        flex: 1;
+        padding: 15px;
+        overflow-y: auto;
+        background: #e9e9e9;
+      }
+      .message {
+        margin-bottom: 10px;
+        padding: 10px;
+        border-radius: 5px;
+        max-width: 80%;
+        word-break: break-all;
+      }
+      .user {
+        background: #d1ffd6;
+        align-self: flex-end;
+      }
+      .ai {
+        background: #fff;
+        align-self: flex-start;
+        border: 1px solid #ccc;
+      }
+      #chat-form {
+        display: flex;
+        border-top: 1px solid #ccc;
+      }
+      #user-input {
+        flex: 1;
+        padding: 10px;
+        border: none;
+        font-size: 16px;
+      }
+      #chat-form button {
+        background: #4CAF50;
+        color: white;
+        border: none;
+        padding: 0 20px;
+        font-size: 16px;
+        cursor: pointer;
+      }
+      #status {
+        text-align: center;
+        padding: 10px;
+        background: #fffae6;
+        font-size: 14px;
+      }
+    </style>
+    <!-- transformers.js ライブラリをCDNから読み込み -->
+    <script src="https://cdn.jsdelivr.net/npm/@xenova/transformers@latest/dist/transformers.min.js"></script>
+  </head>
+  <body>
+    <div class="chat-container">
+      <h1>日本語 AI チャット</h1>
+      <div id="status">モデルをロード中。しばらくお待ちください…</div>
+      <div id="chat-window"></div>
+      <form id="chat-form">
+        <input type="text" id="user-input" placeholder="メッセージを入力..." autocomplete="off" required />
+        <button type="submit" disabled>送信</button>
+      </form>
+    </div>
+    <script>
+      // このデモは、transformers.js を用いてブラウザ内で日本語生成モデル（例：rinna/japanese-gpt2-medium）を動作させます。
+      // ※ この手法は、モデルファイルをクライアント側にダウンロードするため、初回ロードに時間がかかる可能性があります。
+      // また、実行環境の性能に依存して生成速度が変わります。
 
-    // チャットフォーム送信時のイベントリスナー
-    document.getElementById("chat-form").addEventListener("submit", async function(event) {
-      event.preventDefault();
+      const chatWindow = document.getElementById("chat-window");
+      const statusElem = document.getElementById("status");
+      const chatForm = document.getElementById("chat-form");
       const userInputElem = document.getElementById("user-input");
-      const message = userInputElem.value.trim();
-      if (!message) return;
+      const submitButton = chatForm.querySelector("button");
 
-      // ユーザーのメッセージを表示
-      appendMessage(message, "user");
+      // transformers.js 用のグローバル変数
+      let model = null;
+      let tokenizer = null;
 
-      // Hugging Face のモデルを利用して AI の応答を取得
-      const botResponse = await getBotResponse(message);
-      setTimeout(() => {
-        appendMessage(botResponse, "ai");
-      }, 500); // 少し遅延させて表示
+      // チャットウィンドウにメッセージを追加する関数
+      function appendMessage(text, sender) {
+        const messageDiv = document.createElement("div");
+        messageDiv.classList.add("message", sender);
+        messageDiv.innerText = text;
+        chatWindow.appendChild(messageDiv);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+      }
 
-      userInputElem.value = "";
-    });
-  </script>
-</body>
+      // モデルとトークナイザーのロード（1回限り）
+      async function loadModel() {
+        try {
+          statusElem.innerText = "モデルをロード中。しばらくお待ちください…";
+          // モデルのロード。こちらは例として rinna/japanese-gpt2-medium を指定
+          // モデルサイズが大きい場合、時間がかかる可能性があります。
+          model = await window.transformers.AutoModelForCausalLM.from_pretrained(
+            "rinna/japanese-gpt2-medium"
+          );
+          tokenizer = await window.transformers.AutoTokenizer.from_pretrained(
+            "rinna/japanese-gpt2-medium"
+          );
+          statusElem.innerText = "モデルのロードが完了しました。";
+          submitButton.disabled = false;
+        } catch (error) {
+          console.error("モデルのロードに失敗しました:", error);
+          statusElem.innerText = "モデルのロードに失敗しました。ブラウザのコンソールをご確認ください。";
+        }
+      }
+
+      // メッセージに対する生成応答を取得する関数
+      async function generateResponse(prompt) {
+        try {
+          // トークナイズ
+          const inputs = await tokenizer.encode(prompt);
+          // テキスト生成 (max_new_tokens で生成されるトークン数を調整)
+          const output = await model.generate(inputs, { max_new_tokens: 50 });
+          // 生成結果をデコード
+          const reply = await tokenizer.decode(output);
+          return reply;
+        } catch (error) {
+          console.error("生成エラー:", error);
+          return "エラーが発生しました。";
+        }
+      }
+
+      // モデルのロードを開始
+      loadModel();
+
+      // フォーム送信時のイベントリスナー
+      chatForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        const userMessage = userInputElem.value.trim();
+        if (!userMessage) return;
+        appendMessage(userMessage, "user");
+        userInputElem.value = "";
+        appendMessage("応答生成中...", "ai");
+
+        const aiReply = await generateResponse(userMessage);
+        // 直前の「応答生成中...」のメッセージを置換するために再読み込み
+        // シンプルな実装のため、ここでは新たに生成したメッセージを追加しています
+        appendMessage(aiReply, "ai");
+      });
+    </script>
+  </body>
 </html>
